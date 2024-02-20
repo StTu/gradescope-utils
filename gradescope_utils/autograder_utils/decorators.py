@@ -168,3 +168,36 @@ class partial_credit(object):
                 return func(*args, **kwargs)
 
         return wrapper
+
+
+class TestTimeout(RuntimeError):
+    pass
+
+
+class timeout:
+    """Decorator that sets a time limit on an individual test case, in seconds.
+    """
+    def __init__(self, seconds, error_message=None):
+        if error_message is None:
+            error_message = "test timed out after {}s.".format(seconds)
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        raise TestTimeout(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        signal.alarm(0)
+
+    def __call__(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with _update_wrapper_after_call(wrapper, func):
+                with self:
+                    return func(*args, **kwargs)
+
+        return wrapper
