@@ -53,6 +53,15 @@ class JSONTestResult(result.TestResult):
         value = getattr(getattr(test, test._testMethodName), '__leaderboard_value__', None)
         return (column_name, sort_order, value)
 
+    def getOutputFormat(self, test):
+        return getattr(getattr(test, test._testMethodName), '__output_format__', None)
+
+    def getCustomOutput(self, test):
+        return getattr(getattr(test, test._testMethodName), '__custom_output__', None)
+
+    def getCustomOutputMode(self, test):
+        return getattr(getattr(test, test._testMethodName), '__custom_output_mode__', None)
+
     def startTest(self, test):
         super(JSONTestResult, self).startTest(test)
 
@@ -74,6 +83,9 @@ class JSONTestResult(result.TestResult):
         visibility = self.getVisibility(test)
         hide_errors_message = self.getHideErrors(test)
         score = self.getScore(test)
+        output_format = self.getOutputFormat(test)
+        custom_output = self.getCustomOutput(test)
+        custom_output_mode = self.getCustomOutputMode(test)
         output = self.getOutput() or ""
         if err:
             if hide_errors_message:
@@ -86,6 +98,11 @@ class JSONTestResult(result.TestResult):
                     else:
                         output += '\n\n'
                 output += "{0}{1}\n".format(self.failure_prefix, err[1])
+        if custom_output_mode == 'append':
+            if output:
+                output += '\n' + custom_output
+            else:  # mode is 'replace'
+                output = custom_output
         result = {
             "name": self.getDescription(test),
         }
@@ -105,6 +122,8 @@ class JSONTestResult(result.TestResult):
             result["tags"] = tags
         if output:
             result["output"] = output
+        if output_format:
+            result["output_format"] = output_format
         if visibility:
             result["visibility"] = visibility
         if number:
