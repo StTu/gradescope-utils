@@ -201,3 +201,37 @@ class timeout:
                     return func(*args, **kwargs)
 
         return wrapper
+
+
+class custom_output(object):
+    """Decorator that provides a callback function so that tests 
+    can provide custom messages to the student.
+    """
+
+    FORMATS = ["text", "html", "simple_format", "md", "ansi"]
+    MODES = ["replace", "append"]
+
+    def __init__(self, format="text", mode="replace"):
+        if format not in custom_output.FORMATS:
+            raise ValueError(f"format must be one of the gradescope-approved formats: "
+                             f"{custom_output.FORMATS}")
+        if mode not in custom_output.MODES:
+            raise ValueError(f"mode must be one of the following: {custom_output.MODES}")
+
+        self.format = format
+        self.mode = mode
+
+    def __call__(self, func):
+        func.__output_format__ = self.format
+        func.__custom_output_mode__ = self.mode
+
+        def set_custom_output(x):
+            wrapper.__custom_output__ = x
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            kwargs["set_custom_output"] = set_custom_output
+            with _update_wrapper_after_call(wrapper, func):
+                return func(*args, **kwargs)
+
+        return wrapper
