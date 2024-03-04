@@ -57,7 +57,7 @@ class JSONTestResult(result.TestResult):
         return getattr(getattr(test, test._testMethodName), '__output_format__', None)
 
     def getCustomOutput(self, test):
-        return getattr(getattr(test, test._testMethodName), '__custom_output__', None)
+        return getattr(getattr(test, test._testMethodName), '__custom_output__', "")
 
     def getCustomOutputMode(self, test):
         return getattr(getattr(test, test._testMethodName), '__custom_output_mode__', None)
