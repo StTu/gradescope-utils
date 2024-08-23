@@ -4,11 +4,17 @@ from typing import Optional, Union
 import os
 
 
+# By default, load the metadata file from the location where it will be when running on Gradescope.
+# But, for debugging, you can set the AUTOGRADER_METADATA_FILE environment variable to point to a
+# different file.
+METADATA_FILE = os.getenv("AUTOGRADER_METADATA_FILE", "/autograder/submission_metadata.json")
+
+
 def read_metadata():
     # See https://gradescope-autograders.readthedocs.io/en/latest/submission_metadata/ for
     # information about the format of the submission metadata file.
-    if os.path.exists("/autograder/submission_metadata.json"):
-        with open("/autograder/submission_metadata.json") as f:
+    if os.path.exists(METADATA_FILE):
+        with open(METADATA_FILE) as f:
             return json.load(f)
     else:
         return {}
