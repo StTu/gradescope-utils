@@ -22,7 +22,7 @@ def read_metadata():
 
 def submission_datetime(previous_submission: dict) -> datetime:
     # Submission times are formatted like "2017-04-06T14:24:48.087023-07:00"
-    return datetime.strptime(previous_submission["time"], "%Y-%m-%dT%H:%M:%S.%f%z")
+    return datetime.strptime(previous_submission["submission_time"], "%Y-%m-%dT%H:%M:%S.%f%z")
 
 
 def prepend_rate_limit_warning(previous_submission: dict, reason: str) -> dict:
@@ -69,13 +69,16 @@ def rate_limit_info_message_as_test_result(
         total_submissions = len(previous_submissions) + int(plus_one_for_current_submission)
         messages.append(
             f"Cap on total submissions: {max_total}. "
-            f"This is your {_int_rank_format(total_submissions)} submission."
+            f"This is your {_int_rank_format(total_submissions)} submission. "
             f"You have {max_total - total_submissions} submissions left (total)."
         )
     if max_per_day is not None:
         yesterday = now - timedelta(days=1)
         last_24_hours_submissions = list(
-            filter(lambda s: submission_datetime(s) > yesterday, previous_submissions)
+            filter(
+                lambda s: submission_datetime(s).timestamp() > yesterday.timestamp(),
+                previous_submissions,
+            )
         )
         num_24h_submissions = len(last_24_hours_submissions) + int(plus_one_for_current_submission)
         messages.append(
@@ -86,7 +89,10 @@ def rate_limit_info_message_as_test_result(
     if max_per_hour is not None:
         last_hour = now - timedelta(hours=1)
         last_hour_submissions = list(
-            filter(lambda s: submission_datetime(s) > last_hour, previous_submissions)
+            filter(
+                lambda s: submission_datetime(s).timestamp() > last_hour.timestamp(),
+                previous_submissions,
+            )
         )
         num_1h_submissions = len(last_hour_submissions) + int(plus_one_for_current_submission)
         messages.append(
@@ -128,7 +134,10 @@ def get_earlier_results_if_rate_limited(
     now = datetime.now()
     yesterday = now - timedelta(days=1)
     last_24_hours_submissions = list(
-        filter(lambda s: submission_datetime(s) > yesterday, previous_submissions)
+        filter(
+            lambda s: submission_datetime(s).timestamp() > yesterday.timestamp(),
+            previous_submissions,
+        )
     )
     if max_per_day is not None and len(last_24_hours_submissions) >= max_per_day:
         sorted_submissions = list(sorted(last_24_hours_submissions, key=submission_datetime))
@@ -142,7 +151,10 @@ def get_earlier_results_if_rate_limited(
 
     last_hour = now - timedelta(hours=1)
     last_hour_submissions = list(
-        filter(lambda s: submission_datetime(s) > last_hour, previous_submissions)
+        filter(
+            lambda s: submission_datetime(s).timestamp() > last_hour.timestamp(),
+            previous_submissions,
+        )
     )
     if max_per_hour is not None and len(last_hour_submissions) >= max_per_hour:
         sorted_submissions = list(sorted(last_hour_submissions, key=submission_datetime))
