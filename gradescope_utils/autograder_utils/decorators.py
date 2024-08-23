@@ -204,14 +204,31 @@ class timeout:
 
 
 class custom_output(object):
-    """Decorator that provides a callback function so that tests 
-    can provide custom messages to the student.
+    """Decorator to set the output_format of a test result in results.json, and optionally provide
+    a setter function so the test can determine the output at runtime.
+
+    Usage example 1:
+    @custom_output(format="simple_format", mode="error_only")
+    def mytest():
+        raise ValueError(r"This is a custom error message with \n\n newlines and <i>fancy html</i>")
+
+    Usage example 2:
+    @custom_output(format="text", mode="append")
+    def mytest(set_custom_output=None):
+        set_custom_output("This is a custom output message! It will be appended after any errors.")
+        raise ValueError("This error message will appear first in the output.")
+
+    Usage example 3:
+    @custom_output(format="md", mode="replace")
+    def mytest(set_custom_output=None):
+        set_custom_output("This is a **custom output message**! It will replace any errors.")
+        raise ValueError("This error message will not appear in the output.")
     """
 
     FORMATS = ["text", "html", "simple_format", "md", "ansi"]
-    MODES = ["replace", "append"]
+    MODES = ["error_only", "replace", "append"]
 
-    def __init__(self, format="text", mode="replace"):
+    def __init__(self, format="text", mode="error_only"):
         if format not in custom_output.FORMATS:
             raise ValueError(f"format must be one of the gradescope-approved formats: "
                              f"{custom_output.FORMATS}")
@@ -230,7 +247,8 @@ class custom_output(object):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            kwargs["set_custom_output"] = set_custom_output
+            if self.mode in ["replace", "append"]:
+                kwargs["set_custom_output"] = set_custom_output
             with _update_wrapper_after_call(wrapper, func):
                 return func(*args, **kwargs)
 

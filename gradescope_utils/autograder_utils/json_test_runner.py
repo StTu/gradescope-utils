@@ -98,10 +98,12 @@ class JSONTestResult(result.TestResult):
                     else:
                         output += '\n\n'
                 output += "{0}{1}\n".format(self.failure_prefix, err[1])
-        if custom_output_mode == 'append':
+        if custom_output_mode == "append":
             output = (output + '\n' + custom_output).strip()
-        else:  # mode is 'replace'
+        elif custom_output_mode == "replace":
             output = custom_output
+        elif custom_output_mode == "error_only":
+            pass  # Default to whatever output was before
         result = {
             "name": self.getDescription(test),
         }
