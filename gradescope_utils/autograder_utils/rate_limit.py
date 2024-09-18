@@ -49,6 +49,13 @@ def _int_rank_format(rank: int) -> str:
     return f"{rank}th"
 
 
+def _is_previous_submission_rate_limited(previous_submission: dict) -> bool:
+    extras = previous_submission.get("results", {}).get("extra_data", {})
+    if extras is not None:
+        return extras.get("rate_limited", False)
+    return False
+
+
 def load_previous_submissions(metadata_file: Optional[str] = None) -> list:
 
     metadata = read_metadata(metadata_file=metadata_file)
@@ -62,10 +69,7 @@ def load_previous_submissions(metadata_file: Optional[str] = None) -> list:
     # against any totals. For backwards-compatibility, any submissions that do not have the
     # rate_limited flag set are assumed to not have been rate-limited.
     previous_submissions = list(
-        filter(
-            lambda s: not s["results"].get("extra_data", {}).get("rate_limited", False),
-            previous_submissions,
-        )
+        filter(lambda s: not _is_previous_submission_rate_limited(s), previous_submissions)
     )
 
     print(

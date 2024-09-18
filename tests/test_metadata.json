@@ -51,6 +51,7 @@
             "output_format": "simple_format"
           }
         ],
+        "extra_data": null,
         "leaderboard": [],
         "visibility": "visible",
         "execution_time": "0.02",
