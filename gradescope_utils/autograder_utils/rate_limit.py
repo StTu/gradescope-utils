@@ -4,17 +4,13 @@ from typing import Optional, Union
 import os
 
 
-# By default, load the metadata file from the location where it will be when running on Gradescope.
-# But, for debugging, you can set the AUTOGRADER_METADATA_FILE environment variable to point to a
-# different file.
-METADATA_FILE = os.getenv("AUTOGRADER_METADATA_FILE", "/autograder/submission_metadata.json")
-
-
-def read_metadata():
+def read_metadata(*, metadata_file: Optional[str] = None) -> dict:
     # See https://gradescope-autograders.readthedocs.io/en/latest/submission_metadata/ for
     # information about the format of the submission metadata file.
-    if os.path.exists(METADATA_FILE):
-        with open(METADATA_FILE) as f:
+    if metadata_file is None:
+        metadata_file = "/autograder/submission_metadata.json"
+    if os.path.exists(metadata_file):
+        with open(metadata_file) as f:
             return json.load(f)
     else:
         return {}
@@ -38,6 +34,8 @@ def prepend_rate_limit_warning(previous_submission: dict, reason: str) -> dict:
         "visibility": "visible",  # Optional visibility setting
     }
     results["tests"] = [dummy_test_case] + results.get("tests", [])
+    # Add a flag to indicate that the submission was rate limited, useful for bookkeeping later
+    results["extra_data"] = {"rate_limited": True}
     return results
 
 
@@ -51,17 +49,44 @@ def _int_rank_format(rank: int) -> str:
     return f"{rank}th"
 
 
+def load_previous_submissions(metadata_file: Optional[str] = None) -> list:
+
+    metadata = read_metadata(metadata_file=metadata_file)
+    previous_submissions = metadata.get("previous_submissions", [])
+
+    print(
+        f"Rate limiter debug info: {len(previous_submissions)} total previous submissions in metadata file"
+    )
+
+    # Filter out any previous submissions that were themselves rate-limited; these should not count
+    # against any totals. For backwards-compatibility, any submissions that do not have the
+    # rate_limited flag set are assumed to not have been rate-limited.
+    previous_submissions = list(
+        filter(
+            lambda s: not s["results"].get("extra_data", {}).get("rate_limited", False),
+            previous_submissions,
+        )
+    )
+
+    print(
+        f"Rate limiter debug info: {len(previous_submissions)} previous submissions remain after filtering out those that were previously rate-limited"
+    )
+
+    return previous_submissions
+
+
 def rate_limit_info_message_as_test_result(
     max_total: Optional[int] = None,
     max_per_day: Optional[int] = None,
     max_per_hour: Optional[int] = None,
     plus_one_for_current_submission: bool = False,
+    *,
+    metadata_file: Optional[str] = None,
 ) -> Union[None, dict]:
     if max_total is None and max_per_day is None and max_per_hour is None:
         return
 
-    metadata = read_metadata()
-    previous_submissions = metadata.get("previous_submissions", [])
+    previous_submissions = load_previous_submissions(metadata_file=metadata_file)
 
     now = datetime.now()
     messages = []
@@ -114,12 +139,13 @@ def get_earlier_results_if_rate_limited(
     max_total: Optional[int] = None,
     max_per_day: Optional[int] = None,
     max_per_hour: Optional[int] = None,
+    *,
+    metadata_file: Optional[str] = None,
 ) -> Union[None, dict]:
     if max_total is None and max_per_day is None and max_per_hour is None:
         return
 
-    metadata = read_metadata()
-    previous_submissions = metadata.get("previous_submissions", [])
+    previous_submissions = load_previous_submissions(metadata_file=metadata_file)
 
     if max_total is not None and len(previous_submissions) >= max_total:
         sorted_submissions = list(sorted(previous_submissions, key=submission_datetime))

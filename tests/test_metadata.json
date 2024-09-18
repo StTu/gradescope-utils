@@ -1,0 +1,97 @@
+{
+  "id": 123456,
+  "created_at": "2024-09-06T00:00:00.000000-07:00",
+  "assignment": {
+    "due_date": "2024-09-14T23:00:00.000000-07:00",
+    "group_size": 4,
+    "group_submission": false,
+    "id": 25828,
+    "course_id": 1234,
+    "late_due_date": null,
+    "release_date": "2024-09-07T00:00:00.000000-07:00",
+    "title": "Dummy Assignment",
+    "total_points": "25.0"
+  },
+  "submission_method": "upload",
+  "users": [
+    {
+      "email": "student@example.com",
+      "id": 1234,
+      "name": "Student User"
+    }
+  ],
+  "previous_submissions": [
+    {
+      "submission_time": "2024-09-12T13:44:48.087023-07:00",
+      "score": 3.0,
+      "results": {
+        "tests": [
+          {
+            "name": "Test 1",
+            "score": 0.0,
+            "max_score": 2.0,
+            "status": "failed",
+            "output": "Test Failed: your code here\n",
+            "output_format": "simple_format"
+          },
+          {
+            "name": "Test 2",
+            "score": 2.0,
+            "max_score": 2.0,
+            "status": "passed",
+            "output": "it worked",
+            "output_format": "simple_format"
+          },
+          {
+            "name": "Test 3",
+            "score": 1.0,
+            "max_score": 1.0,
+            "status": "passed",
+            "output": "it worked",
+            "output_format": "simple_format"
+          }
+        ],
+        "leaderboard": [],
+        "visibility": "visible",
+        "execution_time": "0.02",
+        "score": 3.0
+      }
+    },
+    {
+      "submission_time": "2024-09-12T14:24:48.087023-07:00",
+      "score": 5.0,
+      "results": {
+        "tests": [
+          {
+            "name": "Test 1",
+            "score": 2.0,
+            "max_score": 2.0,
+            "status": "passed",
+            "output": "it worked",
+            "output_format": "simple_format"
+          },
+          {
+            "name": "Test 2",
+            "score": 2.0,
+            "max_score": 2.0,
+            "status": "passed",
+            "output": "it worked",
+            "output_format": "simple_format"
+          },
+          {
+            "name": "Test 3",
+            "score": 1.0,
+            "max_score": 1.0,
+            "status": "passed",
+            "output": "it worked",
+            "output_format": "simple_format"
+          }
+        ],
+        "leaderboard": [],
+        "visibility": "visible",
+        "execution_time": "0.02",
+        "score": 5.0
+      }
+    }
+  ]
+}
