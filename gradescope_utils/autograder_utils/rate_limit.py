@@ -65,6 +65,12 @@ def load_previous_submissions(metadata_file: Optional[str] = None) -> list:
         f"Rate limiter debug info: {len(previous_submissions)} total previous submissions in metadata file"
     )
 
+    # Filter out any previous submissions where results is None (meaning that the submission was
+    # never successfully run). These should not count against any totals.
+    previous_submissions = list(
+        filter(lambda s: s.get("results") is not None, previous_submissions)
+    )
+
     # Filter out any previous submissions that were themselves rate-limited; these should not count
     # against any totals. For backwards-compatibility, any submissions that do not have the
     # rate_limited flag set are assumed to not have been rate-limited.
