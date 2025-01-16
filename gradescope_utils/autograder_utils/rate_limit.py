@@ -56,6 +56,16 @@ def _is_previous_submission_rate_limited(previous_submission: dict) -> bool:
     return False
 
 
+def _should_previous_submission_be_counted(previous_submission: dict) -> bool:
+    if previous_submission.get("results") is None:
+        return False
+    if previous_submission.get("autograder_error", False):
+        return False
+    if _is_previous_submission_rate_limited(previous_submission):
+        return False
+    return True
+
+
 def load_previous_submissions(metadata_file: Optional[str] = None) -> list:
 
     metadata = read_metadata(metadata_file=metadata_file)
@@ -65,17 +75,12 @@ def load_previous_submissions(metadata_file: Optional[str] = None) -> list:
         f"Rate limiter debug info: {len(previous_submissions)} total previous submissions in metadata file"
     )
 
-    # Filter out any previous submissions where results is None (meaning that the submission was
-    # never successfully run). These should not count against any totals.
+    # Filter out any previous submissions that were themselves rate-limited or where the
+    # autograder itself crashed; these should not count against any totals. For
+    # backwards-compatibility, any submissions that do not have the rate_limited flag set are
+    # assumed to not have been rate-limited.
     previous_submissions = list(
-        filter(lambda s: s.get("results") is not None, previous_submissions)
-    )
-
-    # Filter out any previous submissions that were themselves rate-limited; these should not count
-    # against any totals. For backwards-compatibility, any submissions that do not have the
-    # rate_limited flag set are assumed to not have been rate-limited.
-    previous_submissions = list(
-        filter(lambda s: not _is_previous_submission_rate_limited(s), previous_submissions)
+        filter(lambda s: _should_previous_submission_be_counted(s), previous_submissions)
     )
 
     print(
