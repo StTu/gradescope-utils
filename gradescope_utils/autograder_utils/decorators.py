@@ -253,3 +253,45 @@ class custom_output(object):
                 return func(*args, **kwargs)
 
         return wrapper
+
+# gradescope_utils/decorators/available_from.py
+from datetime import datetime, timezone
+import re
+
+ISO_Z_RE = re.compile(r"Z$")
+
+def _parse_iso8601_utc(s: str) -> datetime:
+    """
+    Accepts ISO 8601 like '2025-10-01T09:00:00Z' or with explicit offset.
+    Normalizes to timezone-aware UTC.
+    """
+    if s is None:
+        raise ValueError("available_from: timestamp string required")
+    s = s.strip()
+    # Replace trailing 'Z' with '+00:00' so fromisoformat can parse it
+    s = ISO_Z_RE.sub("+00:00", s)
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        # Treat naive as UTC to avoid surprises in containers
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+def available_from(when: str, *, reason: str | None = None):
+    """
+    Example: @available_from("2025-10-01T09:00:00Z")
+    Optional 'reason' appears in the skip message if you choose to surface it.
+    """
+    unlock_dt = _parse_iso8601_utc(when)
+
+    def decorator(fn):
+        # Attach metadata so the runner can read it before executing
+        setattr(fn, "_gs_available_from", unlock_dt)
+        if reason:
+            setattr(fn, "_gs_available_from_reason", reason)
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            # If someone calls it directly (outside our runner), just run.
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
