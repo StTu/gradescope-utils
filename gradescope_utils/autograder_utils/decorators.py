@@ -254,7 +254,6 @@ class custom_output(object):
 
         return wrapper
 
-# gradescope_utils/decorators/available_from.py
 from datetime import datetime, timezone
 from typing import Optional
 import re
@@ -277,22 +276,31 @@ def _parse_iso8601_utc(s: str) -> datetime:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
-def available_from(when: str, *, reason: Optional[str] = None):
-    """
-    Example: @available_from("2025-10-01T09:00:00Z")
-    Optional 'reason' appears in the skip message if you choose to surface it.
-    """
-    unlock_dt = _parse_iso8601_utc(when)
 
-    def decorator(fn):
+class available_from(object):
+    """Decorator to make tests available only after a specific date/time.
+    
+    Usage: @available_from("2025-10-01T09:00:00Z")
+    
+    Tests with this decorator that have not yet unlocked will be:
+    - Skipped during test execution
+    - Excluded from the total max score
+    - Optionally shown in output with a custom message (depending on runner configuration)
+    """
+
+    def __init__(self, when: str, *, reason: Optional[str] = None):
+        self.when = when
+        self.reason = reason
+        self.unlock_dt = _parse_iso8601_utc(when)
+
+    def __call__(self, func):
         # Attach metadata so the runner can read it before executing
-        setattr(fn, "_gs_available_from", unlock_dt)
-        if reason:
-            setattr(fn, "_gs_available_from_reason", reason)
+        func._gs_available_from = self.unlock_dt
+        if self.reason:
+            func._gs_available_from_reason = self.reason
 
-        @wraps(fn)
+        @wraps(func)
         def wrapper(*args, **kwargs):
             # If someone calls it directly (outside our runner), just run.
-            return fn(*args, **kwargs)
+            return func(*args, **kwargs)
         return wrapper
-    return decorator
