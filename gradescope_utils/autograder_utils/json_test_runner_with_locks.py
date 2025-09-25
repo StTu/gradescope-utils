@@ -24,7 +24,6 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
         import os
         override = os.getenv("GS_NOW_UTC")  # e.g., "2025-10-01T09:00:00Z"
         if override:
-            from datetime import datetime, timezone
             if override.endswith("Z"):
                 override = override.replace("Z", "+00:00")
             return datetime.fromisoformat(override).astimezone(timezone.utc)
@@ -57,12 +56,7 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
             else:
                 runnable_suite.addTest(t)
 
-        # Run only the runnable tests using the parent implementation
-        result = super().run(runnable_suite)
-
-        # Adjust totals: remove locked tests' weights from the aggregate max_score
-        # The base JSONTestRunner computes totals when generating JSON.
-        # We intercept via post_processor to tweak results before print.
+        # Set up post-processor BEFORE calling parent run
         prev_post = self.post_processor
 
         def post_proc(payload):
@@ -98,10 +92,13 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
                 payload = prev_post(payload)
             return payload
 
-        # Swap in our post-processor just for this call
+        # Set the post-processor before running
         self.post_processor = post_proc
-        # Trigger JSON emission (the base class prints JSON in .run already).
-        # We already ran; to ensure post_processor runs, we regenerate JSON by calling parent logic:
-        # The base class calls post_processor right before output; since we've already run,
-        # we just return the result; JSON is already printed with our post_proc hook in place.
+        
+        # Run only the runnable tests using the parent implementation
+        result = super().run(runnable_suite)
+        
+        # Restore the original post-processor
+        self.post_processor = prev_post
+        
         return result
