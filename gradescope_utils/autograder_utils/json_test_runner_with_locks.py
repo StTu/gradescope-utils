@@ -76,9 +76,9 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
             if self.include_locked_in_output:
                 for t, unlock_dt in locked_tests:
                     name = str(t)
-                    # Use any per-test visibility if present; otherwise hide
+                    # Use any per-test visibility if present; otherwise make visible
                     method = getattr(t, t._testMethodName, None)
-                    vis = getattr(method, "__visibility__", "hidden")
+                    vis = getattr(method, "__visibility__", "visible")
                     reason = getattr(method, "__gs_available_from_reason__", None)
                     msg = self.locked_message_template.format(iso=unlock_dt.isoformat())
                     if reason:

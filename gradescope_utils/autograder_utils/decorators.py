@@ -294,13 +294,20 @@ class available_from(object):
     
     Usage: 
         @available_from("2025-10-01T09:00:00Z")
-        or
-        @available_from(datetime(2025, 10, 1, 9, 0, 0, tzinfo=timezone.utc))
+        @available_from("2025-10-01T09:00:00Z", reason="Custom message here")
     
     Tests with this decorator that have not yet unlocked will be:
     - Skipped during test execution
     - Excluded from the total max score
-    - Optionally shown in output with a custom message (depending on runner configuration)
+    - Optionally shown in output with a custom message (when using JSONTestRunnerWithLocks)
+    
+    Note: To see locked tests with custom messages, you must:
+    1. Use JSONTestRunnerWithLocks instead of JSONTestRunner
+    2. Set include_locked_in_output=True when creating the runner
+    
+    Example:
+        from gradescope_utils.autograder_utils.json_test_runner_with_locks import JSONTestRunnerWithLocks
+        runner = JSONTestRunnerWithLocks(include_locked_in_output=True)
     """
 
     def __init__(self, when: Union[str, datetime], *, reason: Optional[str] = None):
