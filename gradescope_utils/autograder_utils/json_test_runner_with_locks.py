@@ -75,7 +75,13 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
 
             if self.include_locked_in_output:
                 for t, unlock_dt in locked_tests:
-                    name = str(t)
+                    # Use the same naming logic as the base JSONTestRunner
+                    doc_first_line = t.shortDescription()
+                    if self.descriptions and doc_first_line:
+                        name = doc_first_line
+                    else:
+                        name = str(t)
+                    
                     # Use any per-test visibility if present; otherwise make visible
                     method = getattr(t, t._testMethodName, None)
                     vis = getattr(method, "__visibility__", "visible")
