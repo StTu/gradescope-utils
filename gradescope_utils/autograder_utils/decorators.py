@@ -255,18 +255,30 @@ class custom_output(object):
         return wrapper
 
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Union
 import re
 
 ISO_Z_RE = re.compile(r"Z$")
 
-def _parse_iso8601_utc(s: str) -> datetime:
+def _parse_iso8601_utc(s) -> datetime:
     """
     Accepts ISO 8601 like '2025-10-01T09:00:00Z' or with explicit offset.
     Normalizes to timezone-aware UTC.
     """
     if s is None:
         raise ValueError("available_from: timestamp string required")
+    
+    # If it's already a datetime object, just ensure it's in UTC
+    if isinstance(s, datetime):
+        if s.tzinfo is None:
+            # Treat naive datetime as UTC
+            s = s.replace(tzinfo=timezone.utc)
+        return s.astimezone(timezone.utc)
+    
+    # Handle string input
+    if not isinstance(s, str):
+        raise ValueError(f"available_from: expected string or datetime, got {type(s)}")
+    
     s = s.strip()
     # Replace trailing 'Z' with '+00:00' so fromisoformat can parse it
     s = ISO_Z_RE.sub("+00:00", s)
@@ -280,7 +292,10 @@ def _parse_iso8601_utc(s: str) -> datetime:
 class available_from(object):
     """Decorator to make tests available only after a specific date/time.
     
-    Usage: @available_from("2025-10-01T09:00:00Z")
+    Usage: 
+        @available_from("2025-10-01T09:00:00Z")
+        or
+        @available_from(datetime(2025, 10, 1, 9, 0, 0, tzinfo=timezone.utc))
     
     Tests with this decorator that have not yet unlocked will be:
     - Skipped during test execution
@@ -288,7 +303,7 @@ class available_from(object):
     - Optionally shown in output with a custom message (depending on runner configuration)
     """
 
-    def __init__(self, when: str, *, reason: Optional[str] = None):
+    def __init__(self, when: Union[str, datetime], *, reason: Optional[str] = None):
         self.when = when
         self.reason = reason
         self.unlock_dt = _parse_iso8601_utc(when)
