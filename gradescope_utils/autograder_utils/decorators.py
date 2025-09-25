@@ -326,3 +326,66 @@ class available_from(object):
             # If someone calls it directly (outside our runner), just run.
             return func(*args, **kwargs)
         return wrapper
+
+class group(object):
+    """Decorator to organize tests into named groups with automatic numbering.
+    
+    This decorator combines number, tags, and weight decorators to create
+    well-organized test suites that display nicely on Gradescope.
+    
+    Usage: 
+        @group("Basic Syntax", order=1, weight=5, tags=["syntax", "basic"])
+        def test_variables(self):
+            pass
+            
+        @group("Basic Syntax", order=2, weight=5, tags=["syntax", "basic"]) 
+        def test_functions(self):
+            pass
+    
+    The 'order' parameter creates test numbers like "1.1", "1.2", etc.
+    where the first digit comes from the group's first appearance.
+    """
+    
+    # Class variable to track group numbers
+    _group_numbers = {}
+    _group_counters = {}
+    
+    def __init__(self, group_name, order=None, weight=1, tags=None, visibility="visible"):
+        self.group_name = group_name
+        self.order = order
+        self.weight = weight
+        self.tags = tags or []
+        self.visibility = visibility
+        
+        # Assign group number if this is the first time we see this group
+        if group_name not in self._group_numbers:
+            self._group_numbers[group_name] = len(self._group_numbers) + 1
+            self._group_counters[group_name] = 0
+        
+        # Auto-increment order if not specified
+        if order is None:
+            self._group_counters[group_name] += 1
+            self.order = self._group_counters[group_name]
+    
+    def __call__(self, func):
+        # Apply the combined decorations
+        group_num = self._group_numbers[self.group_name]
+        test_number = f"{group_num}.{self.order}"
+        
+        # Add group name to tags
+        combined_tags = list(self.tags) + [self.group_name.lower().replace(" ", "_")]
+        
+        # Apply all the decorators
+        func.__number__ = test_number
+        func.__weight__ = self.weight
+        func.__tags__ = tuple(combined_tags)
+        func.__visibility__ = self.visibility
+        func.__group_name__ = self.group_name
+        
+        return func
+    
+    @classmethod
+    def reset(cls):
+        """Reset group numbering (useful for testing)"""
+        cls._group_numbers.clear()
+        cls._group_counters.clear()

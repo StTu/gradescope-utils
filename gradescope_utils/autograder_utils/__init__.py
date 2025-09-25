@@ -9,6 +9,7 @@ from .decorators import (
     timeout,
     custom_output,
     available_from,
+    group,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     'timeout',
     'custom_output',
     'available_from',
+    'group',
 ]

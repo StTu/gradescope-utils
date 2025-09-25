@@ -15,10 +15,10 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
                  locked_message_template="This test unlocks on {iso}.",
                  strip_test_prefix=False,
                  **kwargs):
-        super().__init__(*args, **kwargs)
+        # Pass strip_test_prefix to parent constructor
+        super().__init__(*args, strip_test_prefix=strip_test_prefix, **kwargs)
         self.include_locked_in_output = include_locked_in_output
         self.locked_message_template = locked_message_template
-        self.strip_test_prefix = strip_test_prefix
 
     @staticmethod
     def _now_utc():
@@ -30,19 +30,6 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
                 override = override.replace("Z", "+00:00")
             return datetime.fromisoformat(override).astimezone(timezone.utc)
         return datetime.now(timezone.utc)
-
-    def _clean_test_name(self, name):
-        """Clean up test name by optionally removing 'Test' prefix"""
-        if not self.strip_test_prefix:
-            return name
-            
-        # Remove "Test" from the beginning of the name if present
-        import re
-        # Pattern to match "Test" at start, optionally followed by numbers/dots
-        # Examples: "Test01. Something" -> "01. Something", "Test Something" -> "Something"  
-        pattern = r'^Test\s*(\d+\.?\s*)?'
-        cleaned = re.sub(pattern, r'\1', name)
-        return cleaned.strip()
 
     def _flatten_tests(self, suite):
         """Yield test cases from a possibly nested suite."""
@@ -97,8 +84,13 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
                     else:
                         name = str(t)
                     
-                    # Clean up the test name if requested
-                    name = self._clean_test_name(name)
+                    # Clean up the test name using parent's logic
+                    if self.strip_test_prefix:
+                        # Remove "Test" from the beginning of the name if present
+                        import re
+                        # Pattern to match "Test" at start, optionally followed by numbers/dots
+                        pattern = r'^Test\s*(\d+\.?\s*)?'
+                        name = re.sub(pattern, r'\1', name).strip()
                     
                     # Use any per-test visibility if present; otherwise make visible
                     method = getattr(t, t._testMethodName, None)
