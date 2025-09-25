@@ -295,9 +295,9 @@ class available_from(object):
 
     def __call__(self, func):
         # Attach metadata so the runner can read it before executing
-        func._gs_available_from = self.unlock_dt
+        func.__gs_available_from__ = self.unlock_dt
         if self.reason:
-            func._gs_available_from_reason = self.reason
+            func.__gs_available_from_reason__ = self.reason
 
         @wraps(func)
         def wrapper(*args, **kwargs):

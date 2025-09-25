@@ -39,7 +39,7 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
 
     def _is_locked(self, test):
         fn = getattr(test, test._testMethodName, None)
-        unlock_dt = getattr(fn, "_gs_available_from", None)
+        unlock_dt = getattr(fn, "__gs_available_from__", None)
         if unlock_dt is None:
             return False, None
         now = self._now_utc()
@@ -61,22 +61,25 @@ class JSONTestRunnerWithLocks(JSONTestRunner):
 
         def post_proc(payload):
             # payload: {'tests': [...], 'score': float, 'max_score': float, ...}
-            # Subtract locked weights from max_score and optionally append hidden entries
+            # Calculate the correct max_score from runnable tests only
             def _weight_from_test(t):
-                # Same logic the utils use: test._weight or default 1.0
+                # Same logic the utils use: test.__weight__ or default 1.0
                 method = getattr(t, t._testMethodName, None)
-                return getattr(method, "_weight", 1.0)
+                return getattr(method, "__weight__", 1.0)
 
-            locked_total = sum(_weight_from_test(t) for t, _ in locked_tests)
-            payload["max_score"] = max(0.0, payload.get("max_score", 0.0) - locked_total)
+            # Calculate max_score from the tests that actually ran
+            total_max_score = 0.0
+            for test_result in payload.get("tests", []):
+                total_max_score += test_result.get("max_score", 0.0)
+            payload["max_score"] = total_max_score
 
             if self.include_locked_in_output:
                 for t, unlock_dt in locked_tests:
                     name = str(t)
                     # Use any per-test visibility if present; otherwise hide
                     method = getattr(t, t._testMethodName, None)
-                    vis = getattr(method, "_visibility", "hidden")
-                    reason = getattr(method, "_gs_available_from_reason", None)
+                    vis = getattr(method, "__visibility__", "hidden")
+                    reason = getattr(method, "__gs_available_from_reason__", None)
                     msg = self.locked_message_template.format(iso=unlock_dt.isoformat())
                     if reason:
                         msg = f"{msg}\nReason: {reason}"
