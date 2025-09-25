@@ -256,6 +256,7 @@ class custom_output(object):
 
 # gradescope_utils/decorators/available_from.py
 from datetime import datetime, timezone
+from typing import Optional
 import re
 
 ISO_Z_RE = re.compile(r"Z$")
@@ -276,7 +277,7 @@ def _parse_iso8601_utc(s: str) -> datetime:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
-def available_from(when: str, *, reason: str | None = None):
+def available_from(when: str, *, reason: Optional[str] = None):
     """
     Example: @available_from("2025-10-01T09:00:00Z")
     Optional 'reason' appears in the skip message if you choose to surface it.
