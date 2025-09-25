@@ -15,19 +15,34 @@ class JSONTestResult(result.TestResult):
     Used by JSONTestRunner.
     """
     def __init__(self, stream, descriptions, verbosity, results, leaderboard,
-                 failure_prefix):
+                 failure_prefix, strip_test_prefix=False):
         super(JSONTestResult, self).__init__(stream, descriptions, verbosity)
         self.descriptions = descriptions
         self.results = results
         self.leaderboard = leaderboard
         self.failure_prefix = failure_prefix
+        self.strip_test_prefix = strip_test_prefix
 
     def getDescription(self, test):
         doc_first_line = test.shortDescription()
         if self.descriptions and doc_first_line:
-            return doc_first_line
+            name = doc_first_line
         else:
-            return str(test)
+            name = str(test)
+        return self._clean_test_name(name)
+
+    def _clean_test_name(self, name):
+        """Clean up test name by optionally removing 'Test' prefix"""
+        if not self.strip_test_prefix:
+            return name
+            
+        # Remove "Test" from the beginning of the name if present
+        import re
+        # Pattern to match "Test" at start, optionally followed by numbers/dots
+        # Examples: "Test01. Something" -> "01. Something", "Test Something" -> "Something"  
+        pattern = r'^Test\s*(\d+\.?\s*)?'
+        cleaned = re.sub(pattern, r'\1', name)
+        return cleaned.strip()
 
     def getTags(self, test):
         return getattr(getattr(test, test._testMethodName), '__tags__', None)
@@ -169,7 +184,7 @@ class JSONTestRunner(object):
     def __init__(self, stream=sys.stdout, descriptions=True, verbosity=1,
                  failfast=False, buffer=True, visibility=None,
                  stdout_visibility=None, post_processor=None,
-                 failure_prefix="Test Failed: "):
+                 failure_prefix="Test Failed: ", strip_test_prefix=False):
         """
         Set buffer to True to include test output in JSON
 
@@ -180,6 +195,8 @@ class JSONTestRunner(object):
         dict in the first argument.
 
         failure_prefix: prepended to the output of each test's json
+        
+        strip_test_prefix: if True, removes "Test" from the beginning of test names
         """
         self.stream = stream
         self.descriptions = descriptions
@@ -187,6 +204,7 @@ class JSONTestRunner(object):
         self.failfast = failfast
         self.buffer = buffer
         self.post_processor = post_processor
+        self.strip_test_prefix = strip_test_prefix
         self.json_data = {
             "tests": [],
             "leaderboard": [],
@@ -200,7 +218,7 @@ class JSONTestRunner(object):
     def _makeResult(self):
         return self.resultclass(self.stream, self.descriptions, self.verbosity,
                                 self.json_data["tests"], self.json_data["leaderboard"],
-                                self.failure_prefix)
+                                self.failure_prefix, self.strip_test_prefix)
 
     def run(self, test):
         "Run the given test case or test suite."
